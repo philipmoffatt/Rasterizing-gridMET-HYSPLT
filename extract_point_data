@@ -1,0 +1,16 @@
+# the function that pulls gridmet data for the site points (n=20) and creates 
+## a dataframe with date, location, and parameter value
+# this function will only work when used with map as gridmet_data[[1]] is a list
+
+extract_sites_better <- function (gridmet_data, sites, name){
+  temp <- raster::extract(gridmet_data[[1]], sites, method='simple') %>% t %>% as.data.frame() 
+  names(temp) <- sites$location
+  temp <- temp %>% 
+    slice(-1)
+  temp$Date <- as.Date(sub(".*_(\\d{4}-\\d{2}-\\d{2})", "\\1", rownames(temp)), format="%Y-%m-%d")
+  
+  temp_long <-temp %>%  pivot_longer(col = names(temp)[c(1:(length(temp)-1))]) %>% 
+    data.table
+  names(temp_long) <- c("date", "location", name)
+  return(temp_long)
+}
