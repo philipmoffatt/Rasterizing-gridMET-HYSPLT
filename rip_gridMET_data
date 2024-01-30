@@ -1,0 +1,55 @@
+library(tidyverse)
+library(AOI)
+library(climateR)
+library(data.table)
+library(anytime)
+library(terra)
+
+# getting the AOI
+# set locations
+geo <- c("WA", "OR")
+
+AOI <- aoi_get(state = geo)
+
+# Define parameters and years ####
+parameters <- param
+years <- year
+
+# Use a loop to run all parameters and years through the get gridment function  ####
+# List to store daily raster stacks
+gridmet_data <- list()
+
+# Loop through years, do.call ####
+for (year in years) {
+  # Loop through parameters
+  for (param in parameters) {
+    
+    # Initialize an empty list to store daily rasters
+    daily_rasters <- list()
+    
+    # Loop through days
+    for (day in 1:365) {  # Assuming non-leap years
+      # Construct the date string
+      date_str <- as.Date(sprintf("%04d-01-01", year), format="%Y-%m-%d") + day - 1
+      print(paste("pulling data for ", date_str))
+      
+      # Call getGridMET function
+      result <- getGridMET(AOI, param, date_str)
+      print(paste(date_str, "data pulled for ", param))
+      
+      # Add the raster to the daily list
+      daily_rasters[[day]] <- result[[1]]
+    }
+
+# Combine daily rasters into a SpatRaster time series
+param_ts <- do.call(c, daily_rasters)
+
+# Add the parameter time series to the list
+gridmet_data[[paste0(param, "_", year)]] <- list(param_ts)
+
+  }
+}
+
+output_folder <- "file_path"
+
+saveSpatRasterList(gridmet_data, filePath = paste0(output_folder,'gridMET_list.qs'))
