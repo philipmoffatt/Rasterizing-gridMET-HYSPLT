@@ -25,10 +25,25 @@ trajectory_model <- create_trajectory_model() %>%
     days = seq(as.Date('2023-12-15'), as.Date('2023-12-16'), by = "day"),
     daily_hours = "12",
     direction = "backward",
-    met_type = "reanalysis", model_height = 10000) %>%
+    met_type = "reanalysis",
+    model_height = 10000) %>%
   splitr::run_model()
 ```
-`trajectory_model` is a list containing the trajectory data for the given dates in December 2023. Refer here for more details on the package and documentation:  https://github.com/rich-iannone/splitr
+`trajectory_model` is a list containing the trajectory data for the given dates in December 2023. Refer here for more details on the package and documentation:  https://github.com/rich-iannone/splitr  
+-  `lat` the latitude for the HYSPLIT model initiation location
+-  `lon` the longitude
+-  `height` the above ground level for air parcel initiation in meters
+-  `duration` the number of hours to run the HYSPLIT model backward or forward
+-  `days` the sequence of dates to model over
+-  `daily_hours` the hours of the each day to initiate a trajectory model
+-  `direction` tells HYSPLIT to run forward or backward from the beginning datetime
+-  `met_type` user selection for atmospheric data downloaded from the NOAA FTP server to force HYSPLIT (gdas1, narr, reanalysis)
+-  `model_height` sets the maximum height HYSPLIT will track air parcels in meters
+
+The `trajectory_model` converts directly to a dataframe using splitr::get_output_table() and plotted via ggplot to examine trajectory data spatially. 
+
+
+
 
 ```{r}
 start_date <- '2021-01-25' # beginning date for trajectory data
@@ -40,16 +55,17 @@ locs <- data.frame(
   latitude = c(42.235032, 42.235032, 42.23503, 42.375032, 42.375032, 42.375032, 42.515032, 42.515032, 42.515032),
   longitude = c(-123.017016, -122.877016, -122.7370160, -123.017016, -122.877016, -122.737016, -123.017016, -122.877016, -122.737016)
 )
+
 example_traj_df <- run_trajectory_model(start_date = start_date,
                                         end_date = end_date,
                                         locations_df = locs,
-                                        met_dir_in = met_dir_in)
+                                        met_dir_in = NULL)
 ```
 The function `run_trajectory_model` is a wrapper for `trajectory_model` that provides an application to a study domain. If using parallel processing or executing on HPC, use the `exec_dir` argument in `trajectory_model' to create temporary locations for HYSPLIT trajectory data for each initiation point. It is important to provide the entire path for this argument.     
 - `start_date`:  a string date to begin HYPSLIT models from ('2021-01-25')  
 - `end_date`:  a string date to end HYPSLIT models on ('2021-01-26')  
 - `location_df`:  a dataframe with columns 'location,' 'latitude,' and 'longitude.'  
-- `met_dir_in`:  optional directory where .gbl files that HYSPLIT runs on can be downloaded to reduce computation time.
+- `met_dir_in`:  optional directory where .gbl files that HYSPLIT runs on can be downloaded to reduce computation time. Running the function with this argument defined as `NULL` results in the .gbl files being downloaded to the working directory from URL 'ftp://arlftp.arlhq.noaa.gov/archives/reanalysis
 
  
 
