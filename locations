@@ -1,0 +1,19 @@
+# study area locations. Medford Airport is point 4.
+locs <- data.frame(
+  station = c('1', '2', '3', '4', '5', '6', '7', '8', '9'),
+  latitude = c(42.235032, 42.235032, 42.23503, 42.375032, 42.375032, 42.375032, 42.515032, 42.515032, 42.515032),
+  longitude = c(-123.017016, -122.877016, -122.7370160, -123.017016, -122.877016, -122.737016, -123.017016, -122.877016, -122.737016)
+)
+
+# Convert locs to a simple features data frame with a CRS
+locs_sf <- st_as_sf(locs, coords = c("longitude", "latitude"), crs = 4326)
+
+ggplot() +
+  geom_sf(data = locs_sf, aes(color = station)) +
+  theme_minimal() +
+  labs(title = "Station Locations",
+       x = "Longitude",
+       y = "Latitude") +
+  theme(legend.position = "right",
+        plot.title = element_text(hjust = 0.5, size = 16),
+        axis.title = element_text(size = 12))
