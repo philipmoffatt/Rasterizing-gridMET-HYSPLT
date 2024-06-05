@@ -1,0 +1,53 @@
+@run_trajectory_model creates a dataframe of trajectory data for a matrix of trajectory points around each given lat and lon target location over the dates provided. 
+arguments:  @start_date is the beginning date
+            @end_date is the final date
+            @met_dir_in is an optional directory location where .gbl files containing the data HYSPLIT runs on are stored.
+            This saves computation time. 
+            @exec_dir_in is an optional directory where the temporary files are built during HYSPLIT runs. This is necessary
+            when running multiple HYSPLIT models on separate cores simultaneously. 
+
+run_trajectory_model <- function(start_date, end_date, 
+                                 locations_df, 
+                                 met_dir_in,
+                                 exec_dir_in) {
+  
+  # Iterate over each location in the locations dataframe
+  for (j in 1:nrow(locations_df)) {
+    lat <- locations_df$lat
+    lon <- locations_df$lon
+  
+    # Get the StationNumber associated with the current lat and lon
+    station <- locations_df$station[j]
+  
+    # Create trajectory model for the current location
+    trajectory_model <- create_trajectory_model() %>%
+      add_grid(
+        lat = lat,
+        lon = lon,
+        range = c(0.28, 0.28),
+        division = c(0.14, 0.14))  %>%
+        add_trajectory_params(
+        height = 1000,
+        duration = 120,
+        days = seq(as.Date(start_date), as.Date(end_date), by = "day"),
+        daily_hours = c(0, 6, 12, 18),
+        direction = "backward",
+        met_type = "reanalysis", 
+        met_dir = met_dir_in,
+        exec_dir = exec_dir_in,
+        clean_up = FALSE) %>%
+      splitr::run_model()
+  # 
+  # # Get trajectory output as a data frame for the current location
+  trajectory_df <- trajectory_model %>% get_output_tbl()
+  # 
+  # # Add a column to the dataframe with the corresponding StationNumber
+  trajectory_df$station <- station
+  # 
+  # Append the named trajectory data frame to the list
+  trajectory_list[[i]] <- trajectory_df
+  }
+  
+  # Return the list of named trajectory data frames for all locations
+  return(trajectory_df)#trajectory_list)
+}
