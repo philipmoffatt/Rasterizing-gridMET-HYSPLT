@@ -42,7 +42,24 @@ trajectory_model <- create_trajectory_model() %>%
 
 The `trajectory_model` converts directly to a dataframe using splitr::get_output_table() and plotted via ggplot to examine trajectory data spatially. 
 
-
+```{r}
+library(sf)
+library(maps) 
+ggplot(data = basic_traj_df) +
+    borders("world", xlim = c(-130, -60), ylim = c(20, 50), colour = "gray85", fill = "gray80") +
+    geom_point(aes(x = lon, y = lat, color = traj_dt))+
+    theme_minimal() +
+    labs(
+        title = "HYSPLIT Houly Trajectories", subtitle = '120 hours backwards',
+        x = "Longitude",
+        y = "Latitude",
+        color = "Datetime"
+    ) +
+    theme(
+        plot.title = element_text(hjust = 0.5, size = 16),
+        axis.title = element_text(size = 12)
+    )
+```
 
 
 ```{r}
