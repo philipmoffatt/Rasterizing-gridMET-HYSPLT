@@ -196,9 +196,9 @@ this argument defined as 'NULL' results in the .gbl files being
 downloaded to the working directory from URL
 '<ftp://arlftp.arlhq.noaa.gov/archives/reanalysis>
 
-### Process trajectories 
+### Process trajectories
 
-#### Daily rasters 
+#### Daily rasters
 
 ```{r}
 source("R/traj_agg_2_raster.R")
