@@ -1,0 +1,80 @@
+### Basic HYSPLIT Trajectory Extraction  
+This short vingette demonstrates how to use splitR and visualize the data spatially. See <https://github.com/rich-iannone/splitr> for more detail from the package author.
+
+### Installation
+
+The devtools package is required to install `splitr` from github.
+
+```{r install}
+#install.packages("devtools")  
+library(devtools)  
+#devtools::install_github("rich-iannone/splitr")  
+library(splitr)
+```
+
+#### Basic Use
+
+Pull trajectory files with splitR (0.4.0.9000).
+
+```{r, eval = FALSE}
+trajectory_model <- create_trajectory_model() %>%
+  add_trajectory_params(
+    lat = 42,
+    lon = -121,
+    height = 1000,
+    duration = 120,
+    days = seq(as.Date('2023-12-15'), as.Date('2023-12-16'), by = "day"),
+    daily_hours = "12",
+    direction = "backward",
+    met_type = "reanalysis",
+    model_height = 10000) %>%
+  splitr::run_model()
+```
+
+`trajectory_model` is a list containing the trajectory data for the
+given dates in December 2023. Refer here for more details on the package
+and documentation: <https://github.com/rich-iannone/splitr> \
+- `lat` the latitude for the HYSPLIT model initiation location
+
+\- `lon` the longitude
+
+\- `height` the above ground level for air parcel initiation in meters
+
+\- `duration` the number of hours to run the HYSPLIT model backward or
+forward
+
+\- `days` the sequence of dates to model over
+
+\- `daily_hours` the hours of the each day to initiate a trajectory
+model
+
+\- `direction` tells HYSPLIT to run forward or backward from the
+beginning datetime
+
+\- `met_type` user selection for atmospheric data downloaded from the
+NOAA FTP server to force HYSPLIT (gdas1, narr, reanalysis)
+
+\- `model_height` sets the maximum height HYSPLIT will track air parcels
+in meters
+
+The `trajectory_model` converts directly to a dataframe using
+splitr::get_output_table(). Plot the trajectories via ggplot to examine
+data spatially.
+
+```{r}
+library(sf)
+library(maps) 
+ggplot(data = basic_traj_df) +
+    borders("world", xlim = c(-130, -60), ylim = c(20, 50), colour = "gray85", fill = "gray80") + # background map with the extent over North America
+    geom_point(aes(x = lon, y = lat, color = traj_dt))+ # air parcel location data, colored by the datetime
+    labs(title = "HYSPLIT Hourly Trajectories", subtitle = '120 hours backwards', x = "Longitude",
+        y = "Latitude", color = "Datetime") +
+    theme(plot.title = element_text(hjust = 0.5, size = 16),
+        axis.title = element_text(size = 12))+
+    theme_minimal()
+```
+
+The plot shows two trajectories initiated at 12 PM on December 15 and 16
+2023. The trajectories are colored by time, lighter is more recent and
+darker as the hour along trajectory approaches a maximum of 120 hours
+prior to the imitation time.

@@ -1,5 +1,64 @@
 
 
+#' @title Run HYSPLIT
+#' @description Runs the HYSPLIT model
+#' @param start_date the begining of the time period to model back trajectories over (character)
+#' @param end_date end of the period (character)
+#' @param locations_df a dataframe consisting of one row and four columns:  latitude (num), longitude (num), station (num), date(Date yyyy-mm-dd)
+#' @param met_dir_in file path to meterological data used to run HYSPLIT (character), an unnecessary param but it saves considerable computation time. Download .gbl files from 'ftp://arlftp.arlhq.noaa.gov/archives/reanalysis' 
+#' @return trajectory dataframe
+#' 
+run_trajectory_model <- function(start_date, end_date, 
+                                 locations_df, 
+                                 met_dir_in) {
+  # Debugging statements
+  print("Starting run_trajectory_model")
+  print(paste("Start date:", start_date))
+  print(paste("End date:", end_date))
+  print(paste("Met directory:", met_dir_in))
+  print("Locations DataFrame:")
+  print(locations_df)
+  
+  # Iterate over each location in the locations dataframe
+  lat <- locations_df$latitude
+  lon <- locations_df$longitude
+  
+  # Get the StationNumber associated with the current lat and lon
+  station <- locations_df$station
+  
+  # Create trajectory model for the current location
+  trajectory_model <- create_trajectory_model() %>%
+    # builds a matrix of points
+    add_grid(
+      lat = lat,
+      lon = lon,
+      range = c(0.28, 0.28),
+      division = c(0.14, 0.14))  %>%
+    # load selected parameters
+    add_trajectory_params(
+      height = 1000, # m agl
+      duration = 120, # hours
+      days = seq(as.Date(start_date), as.Date(end_date), by = "day"),
+      daily_hours = c(0, 6, 12, 18),
+      direction = "backward",
+      met_type = "reanalysis", 
+      met_dir = met_dir_in,
+      model_height = 10000) %>% # trajectory upper limit, stops traj before duration
+    splitr::run_model()
+  
+  # Get trajectory output as a data frame for the current location
+  trajectory_df <- trajectory_model %>% get_output_tbl()
+  
+  # Add a column to the dataframe with the corresponding StationNumber
+  trajectory_df$station <- station
+  
+  # Handle trajectories that pass the prime meridian
+  trajectory_df$lon[which(trajectory_df$lon > 0)] <- trajectory_df$lon[which(trajectory_df$lon > 0)] - (180*2)
+  
+  # Return the list of named trajectory data frames for all locations
+  return(trajectory_df)
+}
+
 #' @title North America Coastline
 #' @description provides the spatial data for the coastline necessary for delineating between the whole trajectory indices and those indices that reflect airmass characteristics overland. 
 #' 

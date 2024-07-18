@@ -352,95 +352,188 @@ display: none;
 </div>
 
 
-<div id="rasterizing-hysplt" class="section level1">
-<h1>Rasterizing-HYSPLT</h1>
+<div id="rasterizing-hysplit" class="section level1">
+<h1>Rasterizing-HYSPLIT</h1>
 <p>This workflow is used for manipulating climate data and creating
 atmospheric indices from HYSPLIT trajectories.</p>
 <p>Software requirements:<br />
 R-Studio 2023.12.0.369: <a href="https://posit.co/products/open-source/rstudio/" class="uri">https://posit.co/products/open-source/rstudio/</a><br />
 R version 4.3.2 (2023-10-31 ucrt): <a href="https://cran.rstudio.com/" class="uri">https://cran.rstudio.com/</a></p>
-<div id="installation" class="section level3">
-<h3>Installation</h3>
-<p>The devtools package is required to install <code>splitr</code> from
-github.</p>
-<p><code>{r install} #install.packages(&quot;devtools&quot;)   library(devtools)   #devtools::install_github(&quot;rich-iannone/splitr&quot;)   library(splitr)</code></p>
-</div>
-<div id="pull-hysplit-trajectory-data" class="section level3">
-<h3>Pull HYSPLIT Trajectory Data</h3>
-<div id="basic-use" class="section level4">
-<h4>Basic Use</h4>
-<p>Pull trajectory files with splitR (0.4.0.9000).</p>
-<p><code>{r, eval = FALSE} trajectory_model &lt;- create_trajectory_model() %&gt;%   add_trajectory_params(     lat = 42,     lon = -121,     height = 1000,     duration = 120,     days = seq(as.Date(&#39;2023-12-15&#39;), as.Date(&#39;2023-12-16&#39;), by = &quot;day&quot;),     daily_hours = &quot;12&quot;,     direction = &quot;backward&quot;,     met_type = &quot;reanalysis&quot;,     model_height = 10000) %&gt;%   splitr::run_model()</code></p>
-<p><code>trajectory_model</code> is a list containing the trajectory
-data for the given dates in December 2023. Refer here for more details
-on the package and documentation: <a href="https://github.com/rich-iannone/splitr" class="uri">https://github.com/rich-iannone/splitr</a><br />
-- <code>lat</code> the latitude for the HYSPLIT model initiation
-location</p>
-<p>- <code>lon</code> the longitude</p>
-<p>- <code>height</code> the above ground level for air parcel
-initiation in meters</p>
-<p>- <code>duration</code> the number of hours to run the HYSPLIT model
-backward or forward</p>
-<p>- <code>days</code> the sequence of dates to model over</p>
-<p>- <code>daily_hours</code> the hours of the each day to initiate a
-trajectory model</p>
-<p>- <code>direction</code> tells HYSPLIT to run forward or backward
-from the beginning datetime</p>
-<p>- <code>met_type</code> user selection for atmospheric data
-downloaded from the NOAA FTP server to force HYSPLIT (gdas1, narr,
-reanalysis)</p>
-<p>- <code>model_height</code> sets the maximum height HYSPLIT will
-track air parcels in meters</p>
-<p>The <code>trajectory_model</code> converts directly to a dataframe
-using splitr::get_output_table(). Plot the trajectories via ggplot to
-examine data spatially.</p>
-<p><code>{r} library(sf) library(maps)  ggplot(data = basic_traj_df) +     borders(&quot;world&quot;, xlim = c(-130, -60), ylim = c(20, 50), colour = &quot;gray85&quot;, fill = &quot;gray80&quot;) + # background map with the extent over North America     geom_point(aes(x = lon, y = lat, color = traj_dt))+ # air parcel location data, colored by the datetime     labs(title = &quot;HYSPLIT Hourly Trajectories&quot;, subtitle = &#39;120 hours backwards&#39;, x = &quot;Longitude&quot;,         y = &quot;Latitude&quot;, color = &quot;Datetime&quot;) +     theme(plot.title = element_text(hjust = 0.5, size = 16),         axis.title = element_text(size = 12))+     theme_minimal()</code></p>
-<p>The plot shows two trajectories initiated at 12 PM on December 15 and
-16 2023. The trajectories are colored by time, lighter is more recent
-and darker as the hour along trajectory approaches a maximum of 120
-hours prior to the imitation time.</p>
-</div>
-<div id="matrix-method" class="section level4">
-<h4>Matrix Method</h4>
-<p>Pulling trajectories from multiple points around a target location
-can better approximate the movement of an airmass. We construct a matrix
-of initiations points around each target location that matches the
-resolution of the reanalysis data product used to force HYSPLIT (~32km).
-Finer resolution likely would not produce values appreciably different,
-whereas a larger resolution sacrifices spatial detail.</p>
-<p>```{r} start_date &lt;- ‘2021-01-25’ # beginning date for trajectory
-data end_date &lt;- ‘2021-01-26’ # end date for the trajectory data</p>
+<div id="installing-and-loading-packages" class="section level4">
+<h4>Installing and loading packages</h4>
+<p>```{r}</p>
 </div>
 </div>
+<div id="function-to-check-if-a-package-is-installed-and-install-it-if-necessary" class="section level1">
+<h1>Function to check if a package is installed, and install it if
+necessary</h1>
+<p>install_if_missing &lt;- function(packages) { for (pkg in packages) {
+if (!require(pkg, character.only = TRUE)) { install.packages(pkg,
+dependencies = TRUE) library(pkg, character.only = TRUE) } } }</p>
 </div>
-<div id="study-area-locations.-medford-airport-is-point-4." class="section level1">
-<h1>study area locations. Medford Airport is point 4.</h1>
-<p>locs &lt;- data.frame( station = c(‘1’, ‘2’, ‘3’, ‘4’, ‘5’, ‘6’, ‘7’,
-‘8’, ‘9’), latitude = c(42.235032, 42.235032, 42.23503, 42.375032,
-42.375032, 42.375032, 42.515032, 42.515032, 42.515032), longitude =
-c(-123.017016, -122.877016, -122.7370160, -123.017016, -122.877016,
--122.737016, -123.017016, -122.877016, -122.737016) )</p>
-<p>example_traj_df &lt;- run_trajectory_model(start_date = start_date,
-end_date = end_date, locations_df = locs, met_dir_in = NULL) ```</p>
-<p>The function <code>run_trajectory_model</code> is a wrapper for
-<code>trajectory_model</code> that provides an application to a study
-domain. If using parallel processing or executing on HPC, use the
-<code>exec_dir</code> argument in <code>trajectory_model</code> to
-create temporary locations for HYSPLIT trajectory data for each
-initiation point. It is important to provide the entire path for this
-argument.</p>
-<p>-<code>start_date</code>: a string date to begin HYPSLIT models from
-(‘2021-01-25’)</p>
-<p>-<code>end_date</code>: a string date to end HYPSLIT models on
-(‘2021-01-26’)</p>
-<p>-<code>location_df</code>: a dataframe with columns ‘location,’
-‘latitude,’ and ‘longitude.’</p>
-<p>-<code>met_dir_in</code>: optional directory where .gbl files that
-HYSPLIT runs on can be downloaded to reduce computation time. Running
-the function with this argument defined as ‘NULL’ results in the .gbl
-files being downloaded to the working directory from URL ’<a href="ftp://arlftp.arlhq.noaa.gov/archives/reanalysis" class="uri">ftp://arlftp.arlhq.noaa.gov/archives/reanalysis</a></p>
-<p>Process trajectories Daily rasters Cluster analysis</p>
+<div id="list-of-packages" class="section level1">
+<h1>List of packages</h1>
+<p>packages &lt;- c( “tidyverse”, “splitr”, “climateR”, “climate”,
+“openair”, “maps”, “terra”, “plyr”, “sf”, “rnaturalearth”, “geosphere”,
+“data.table”, “raster”, “leaflet”, “tictoc”, “furrr” )</p>
+</div>
+<div id="install-missing-packages" class="section level1">
+<h1>Install missing packages</h1>
+<p>install_if_missing(packages)</p>
+</div>
+<div id="additional-libraries-that-may-need-to-be-installed-from-github" class="section level1">
+<h1>Additional libraries that may need to be installed from GitHub</h1>
+<p>if (!require(“devtools”, character.only = TRUE)) {
+install.packages(“devtools”) library(devtools) }</p>
+</div>
+<div id="install-splitr-from-github-if-not-installed" class="section level1">
+<h1>Install ‘splitr’ from GitHub if not installed</h1>
+<p>if (!require(“splitr”, character.only = TRUE)) {
+devtools::install_github(“rich-iannone/splitr”) library(splitr) }</p>
+</div>
+<div id="install-climater-from-github-if-not-installed" class="section level1">
+<h1>Install ‘climateR’ from GitHub if not installed</h1>
+<p>if (!require(“climateR”, character.only = TRUE)) {
+devtools::install_github(“mikejohnson51/climateR”) library(climateR)
+}</p>
+</div>
+<div id="install-climate-from-github-if-not-installed" class="section level1">
+<h1>Install ‘climate’ from GitHub if not installed</h1>
+<p>if (!require(“climate”, character.only = TRUE)) {
+devtools::install_github(“ropensci/climate”) library(climate) }</p>
+<pre><code>
+#### Matrix Method
+
+Pulling trajectories from multiple points around a target location can
+better approximate the movement of an airmass. We construct a matrix of
+initiations points around each target location that matches the
+resolution of the reanalysis data product used to force HYSPLIT
+(\~32km). Finer resolution likely would not produce values appreciably
+different, whereas a larger resolution sacrifices spatial detail.
+
+```{r}
+# study area locations. Medford Airport is point 5.
+locs &lt;- data.frame(
+  station = c(&#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;, &#39;5&#39;, &#39;6&#39;, &#39;7&#39;, &#39;8&#39;, &#39;9&#39;),
+  latitude = c(42.235032, 42.235032, 42.23503, 42.375032, 42.375032, 42.375032, 42.515032, 42.515032, 42.515032),
+  longitude = c(-123.017016, -122.877016, -122.7370160, -123.017016, -122.877016, -122.737016, -123.017016, -122.877016, -122.737016)
+)
+
+# view the target locations for HYSPLIT models
+leaflet(data = locs) %&gt;%
+  addTiles() %&gt;%
+  addMarkers(
+    label = ~station,
+    clusterOptions = markerClusterOptions()
+  )</code></pre>
+<p>```{r} # Formatted for use on hpc</p>
+<p>args = commandArgs(trailingOnly = T) # arg are expected in order #1:
+the group run file to be iterated over - each line is one location and
+one day #2: the met dir “Hysplt/met_dir” where the .gbl files used for
+modeling backtrj are stored #3: the output directory #4: temp folder
+that provides space for parallel jobs to run hysplit models
+simultaneously</p>
+</div>
+<div id="example" class="section level1">
+<h1>example</h1>
+<p>args = c(“raw_data/locations.csv”, “raw_data/met_dir”,
+“processed_data/example_traj”,
+paste0(“C:/Users/philip.moffatt/Documents/GitHub/Rasterizing-gridMET-HYSPLT/processed_data/exec_dir/runs_”,
+format(Sys.time(), “%Y-%m-%d_%H-%M-%S”)))</p>
+<p>locations_in = read_csv(args[1]) #
+“Hysplt/working_dir/traj_group_<span class="math inline">\(SLURM_ARRAY_TASK_ID&quot; array controls # jobs to
+run met_dir_in = args[2] # &quot;Hysplt/met_dir&quot; Out_dir = args[3]
+# &quot;Hysplt/processed_data/test_runs_2023-09-12&quot; exec_dir =
+args[4] # &quot;parent_folder/\)</span>SLURM_ARRAY_TASK_ID”</p>
+<p>if (!length(args)==4) { stop(‘argumentes are expected in order 1: the
+group run file to be iterated over - each line is one location and one
+day 2: the met dir defalts to “Hysplt/met_dir” 3: the base output
+directory Hysplt/processed_data/runs_$sys.date/ 4: exec_dir where the
+in/out model files are loaded’) } print(paste(‘Locations argument is:’,
+args[1])) print(paste(‘Meteorology argument is:’, args[2]))
+print(paste(‘Processed data directory argument is:’, args[3]))
+print(paste(‘Execution directory argument is:’, args[4]))</p>
+</div>
+<div id="split-to-list" class="section level1">
+<h1>Split to list</h1>
+<p>test_list =(locations_in %&gt;% split(locations_in$station))</p>
+<p>out = lapply( X = test_list, FUN = function(H){ start_time =
+Sys.time() start_date = H<span class="math inline">\(Date  end_date =
+H\)</span>Date + 1 Out_dir = file.path(Out_dir, start_date)</p>
+<pre><code>                     if(!dir.exists(Out_dir)){dir.create(Out_dir, recursive = T)}
+                     
+                     
+                     traj_temp &lt;- run_trajectory_model(locations_df =  H,
+                                                       start_date = start_date,
+                                                       end_date = end_date, 
+                                                       met_dir_in = met_dir_in,
+                                                       exec_dir = exec_dir)
+                     end_time = Sys.time()
+                     
+                     print(paste(&quot;total time per station =&quot;, end_time - start_time, &quot;seconds!&quot;))
+                     
+                     write_rds(traj_temp, file = file.path(Out_dir,paste0(&quot;traj_&quot;,H$station)))
+                   })</code></pre>
+<pre><code>
+The function `run_trajectory_model` is a wrapper for `trajectory_model`
+that provides an application to a study domain. If using parallel
+processing or executing on HPC, use the `exec_dir` argument in
+`trajectory_model` to create temporary locations for HYSPLIT trajectory
+data for each initiation point. It is important to provide the entire
+path for this argument.
+
+\-`start_date`: a string date to begin HYPSLIT models from
+(&#39;2021-01-25&#39;)
+
+\-`end_date`: a string date to end HYPSLIT models on (&#39;2021-01-26&#39;)
+
+\-`location_df`: a dataframe with columns &#39;location,&#39; &#39;latitude,&#39; and
+&#39;longitude.&#39;
+
+\-`met_dir_in`: optional directory where .gbl files that HYSPLIT runs on
+can be downloaded to reduce computation time. Running the function with
+this argument defined as &#39;NULL&#39; results in the .gbl files being
+downloaded to the working directory from URL
+&#39;&lt;ftp://arlftp.arlhq.noaa.gov/archives/reanalysis&gt;
+
+### Process trajectories
+
+#### Daily rasters
+
+```{r}
+source(&quot;R/traj_agg_2_raster.R&quot;)
+
+args = commandArgs(trailingOnly = T)
+#arg are expected in order
+#1: the directory that holds each day of trajectories -- this will be run from a csv.
+# Each job accesses data in one folder that contains the trajectories for a given day for all points in a study domain. 
+
+#2: the out directory provides a location to produce daily folders with HYSPLIT rasters for the study domain.
+
+args = c(&quot;/scratch/user/philip.moffatt/20231201_143053/uncompressed_files/2022-03-04&quot;, &quot;/scratch/user/philip.moffatt/20231201_143053/rasters&quot;)
+
+data_in_path = args[1]
+print(paste(&quot;the data_in_path is &quot;,data_in_path))
+
+out_path = args[2]
+print(paste(&quot;the out_path is &quot;,out_path))
+
+if (!length(args)==2) {
+  stop(&quot;argumentes are expected in order
+      1: the day of trajectorys.
+      2: the out path for the rasters.&quot;)
+      }
+
+### get north_america
+north_america = get_northAmerica()
+
+### run the day of rasters.
+summarize_to_raster(data_in_path = data_in_path,
+                    out_path = out_path)</code></pre>
+<div id="cluster-analysis" class="section level4">
+<h4>Cluster analysis</h4>
 <p>Pull climate data</p>
+</div>
 </div>
 
 
