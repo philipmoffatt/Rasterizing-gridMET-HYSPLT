@@ -196,10 +196,13 @@ summarize_to_raster= function(data_in_path, out_path){
   
   print(paste("the first file in the data path ",data_in_file[[1]]))
   
-  temp_date = data_in_file[[1]] %>% 
-    str_split("/") %>% sapply("[",7)
+  # Regular expression to match a date in the format YYYY-MM-DD
+  date_pattern <- "\\d{4}-\\d{2}-\\d{2}"
   
-  print(paste("the folder being processed is ",temp_date))
+  # Extract the date
+  temp_date <- str_extract(data_in_file[[1]], date_pattern)
+  
+  print(paste("the folder being processed is", temp_date))
   
   tic()
   traj_back = purrr::map(data_in_file,
@@ -219,5 +222,5 @@ summarize_to_raster= function(data_in_path, out_path){
   
   temp_out_path = file.path(out_path, paste0("r_",temp_date))
   terra::writeRaster(data_raster1, paste0(temp_out_path, '.tif'), overwrite = T)
-  print(paste0("Trajectory raster built for ", temp_date,".")) # the "." may not work on kamiak
+  print(paste0("Trajectory raster built for ", temp_date,"."))
 }

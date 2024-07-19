@@ -70,7 +70,9 @@ if (!require("climate", character.only = TRUE)) {
 source('R/functions.R')
 ```
 
-#### Matrix method
+#### HYSPLIT trajectories using a matrix method  
+
+1) Building a matrix of receptor points
 
 Pulling trajectories from multiple points around a target location can
 better approximate the movement of an airmass. We construct a matrix of
@@ -98,13 +100,14 @@ leaflet(data = locs) %>%
   )
 ```
 
-#### Modeling trajectories with HYSPLIT
+2) Running HYSPLIT
 
 The example code below generates air mass back trajectories for nine
 station locations. Using the matrix method, there are nine air parcel
 back trajectories run for each station, four times daily. The processing
-time for the 324 back trajectories will vary from 10-20 min. Traj files
-are stored in "processed_data/example_traj"
+time for the 324 back trajectories will vary from 10-20 min. Trajectory
+files are stored in "processed_data/example_traj" and can be loaded
+instead of downloading.
 
 ```{r, eval=FALSE}
 
