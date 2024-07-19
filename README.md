@@ -116,15 +116,16 @@ args = commandArgs(trailingOnly = T)
 #1: the group run file to be iterated over - each line is one location and one day 
 #2: the met dir "Hysplt/met_dir" where the .gbl files used for modeling backtrj are stored
 #3: the output directory
-#4: temp folder that provides space for parallel jobs to run hysplit models simultaneously
 
 # example 
 args = c("raw_data/locations.csv", "raw_data/met_dir", "processed_data/example_traj")
 
+# assign args
 locations_in = read_csv(args[1])
 met_dir_in = args[2] 
 Out_dir = args[3] 
 
+# check args were correctly loaded
 if (!length(args)==3) {
   stop('argumentes are expected in order
       1: the group run file to be iterated over - each line is one location and one day
@@ -136,7 +137,7 @@ print(paste('Locations argument is:', args[1]))
 print(paste('Meteorology argument is:', args[2]))
 print(paste('Processed data directory argument is:', args[3]))
 
-# simple for loop that takes in each row of the provided locations_in df
+# simple for-loop that takes in each row of the provided locations_in df
 out = for(i in 1:nrow(locations_in)){
     H = locations_in[i,]
     start_time = Sys.time() # log when the model process initiates
@@ -219,6 +220,59 @@ summarize_to_raster(data_in_path = data_in_path,
                     out_path = out_path)
 ```
 
+Visualize HYSPLIT Rasters
+
 #### Cluster analysis
 
-Pull climate data
+```{r}
+# Study area grid points for hysplt initiation ####
+
+# Step 1: Generate the 32 km grid of points
+lon_range <- seq(-124.55, -116.35, by = 0.28) #-126 for coast   
+lat_range <- seq(41.75, 49.25, by = 0.28) # 42 for OR/CA border 
+grid_points <- expand.grid(lon = lon_range, lat = lat_range) %>% mutate(station = 1:n()) # add wet/dry
+# 810 point
+# 27 high
+# 30 wide
+# 
+# 785, 791, 797, 803, 809
+# 605, 611, 617, 623, 629
+# 425, 431, 437, 443, 449
+# 245, 251, 257, 263, 269
+#  65,  71,  77,  83,  90   
+
+#Create a Leaflet map to examine the grid
+leaflet() %>%
+  addTiles() %>%
+  addCircleMarkers(
+    data = grid_points,
+    lng = ~lon, lat = ~lat,
+    radius = 3, color = "green", fill = TRUE, fillOpacity = 0.4, stroke = FALSE,
+    popup = ~paste("Station:", station, "<br>Longitude:", lon, "<br>Latitude:", lat)
+  )
+
+# read in mutated traj df prepped for trajCluster
+all_trj <- read.csv("Hysplt/processed_data/cluster_analysis/all_clus_traj_731.csv")
+
+all_trj <- all_trj %>%
+  mutate(
+    traj_dt_i = as.POSIXct(traj_dt_i, format = "%Y-%m-%dT%H:%M:%SZ"),
+    traj_dt = as.POSIXct(traj_dt, format = "%Y-%m-%dT%H:%M:%SZ"),
+    date2 = as.POSIXct(date2, format = "%Y-%m-%dT%H:%M:%SZ"),
+    date = as.POSIXct(date, format = "%Y-%m-%dT%H:%M:%SZ"),
+    lon = ifelse(lon>=0, -180 - (180-lon), lon)
+  )
+
+# create different clusters
+cluster_5<-trajCluster(all_trj, method = "Euclid", n.cluster=5, xlim = c(-240, -115), ylim = c(25, 75))
+cluster_4<-trajCluster(all_trj, method = "Euclid", n.cluster=4, xlim = c(-240, -115), ylim = c(25, 75))
+cluster_3<-trajCluster(all_trj, method = "Euclid", n.cluster=3, xlim = c(-240, -115), ylim = c(25, 75))
+```
+
+Visualize Trajectory Clusters
+
+### Regression Analysis
+
+Random Forest
+
+Multiple Linear Regression
