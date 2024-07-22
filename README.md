@@ -16,7 +16,7 @@ R version 4.3.2 (2023-10-31 ucrt): <https://cran.rstudio.com/>
 
 #### Installing and loading packages
 
-```{r}
+```{r packages}
 
 # Function to check if a package is installed, and install it if necessary
 install_if_missing <- function(packages) {
@@ -66,7 +66,7 @@ if (!require("climate", character.only = TRUE)) {
 
 #### Load functions
 
-```{r}
+```{r functions}
 source('R/functions.R')
 ```
 
@@ -83,7 +83,7 @@ different, whereas a larger resolution sacrifices spatial detail. The
 interactive example below demonstrates a matrix of nine points around
 the Medford, OR airport (MFR).
 
-```{r}
+```{r visualize_receptors}
 # study area locations. Medford Airport is point 5.
 locs <- data.frame(
   station = c('1', '2', '3', '4', '5', '6', '7', '8', '9'),
@@ -109,7 +109,7 @@ time for the 324 back trajectories will vary from 10-20 min. Trajectory
 files are stored in "processed_data/example_traj" and can be loaded
 instead of downloading.
 
-```{r, eval=FALSE}
+```{r run_hysplit, eval=FALSE}
 
 
 # Formatted for use on hpc
@@ -190,7 +190,7 @@ downloaded to the working directory from URL
 
 #### Daily rasters
 
-```{r}
+```{r create_rasters}
 # obtain necessary functions
 source("R/functions.R")
 
