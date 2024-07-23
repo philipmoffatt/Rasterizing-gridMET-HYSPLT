@@ -181,10 +181,12 @@ backtrj_summarize_k <- function(H = backtrj_dt,
   # Convert 'traj_dt_i' to Pacific time
   test$traj_dt_i_pacific <- with_tz(test$traj_dt_i, tz = "America/Los_Angeles")
   
-  test$location = H %>% 
-    str_split("_") %>% 
-    sapply("[",3) %>% # this may change depending on file paths
-    as.numeric()  #
+  # Extract the number after the last underscore
+  test$location <- H %>%
+    str_extract("_\\d+$") %>%  # Extract the underscore followed by digits at the end of the string
+    str_remove("_") %>%        # Remove the underscore
+    as.numeric()               # Convert to numeric
+  
   test$date = H %>% 
     dirname() %>% 
     basename() # $site_dates 
@@ -199,9 +201,9 @@ backtrj_summarize_k <- function(H = backtrj_dt,
              c = test$lon[2:nrow(test)],
              d = test$lat[2:nrow(test)])
   
-  test[,dist_test := pmap(l, 
-                          function (a,b,c,d)  distVincentyEllipsoid(c(a,b),
-                                                                    c(c,d))) %>%
+  test[,dist_test := purrr::pmap(l, 
+                                 function (a,b,c,d)  distVincentyEllipsoid(c(a,b),
+                                                                           c(c,d))) %>%
          unlist(.) %>% c(0,.)]
   
   test[hour_along==0]$dist_test = 0  
@@ -223,14 +225,14 @@ backtrj_summarize_k <- function(H = backtrj_dt,
     split(test_sf$run)
   
   # running each trajectory run into walk function for sat/freeze cycles
-  test_sf_list = map(test_it_all, 
-                     walk_traj_function)
+  test_sf_list = purrr::map(test_it_all, 
+                            walk_traj_function)
   # summarizing each trajectory with sum all function
-  test_sum_all = map_df(test_sf_list, 
-                        sum_all_fn)
+  test_sum_all = purrr::map_df(test_sf_list, 
+                               sum_all_fn)
   # summarizing each trajectory for land based calcs
-  test_sum_land = map_df(test_sf_list, 
-                         sum_land_fn)
+  test_sum_land = purrr::map_df(test_sf_list, 
+                                sum_land_fn)
   
   test_sum_all2 <- left_join(test_sum_all, test_sum_land)
   
@@ -261,13 +263,17 @@ backtrj_summarize_k <- function(H = backtrj_dt,
 summarize_to_raster= function(data_in_path, out_path){
   
   data_in_file = list.files(data_in_path, full.names = T)
+  # Define the function to be applied to each element in the list in parallel
   
   print(paste("the first file in the data path ",data_in_file[[1]]))
   
-  temp_date = data_in_file[[1]] %>% 
-    str_split("/") %>% sapply("[",7)
+  # Regular expression to match a date in the format YYYY-MM-DD
+  date_pattern <- "\\d{4}-\\d{2}-\\d{2}"
   
-  print(paste("the folder being processed is ",temp_date))
+  # Extract the date
+  temp_date <- str_extract(data_in_file[[1]], date_pattern)
+  
+  print(paste("the folder being processed is", temp_date))
   
   tic()
   traj_back = purrr::map(data_in_file,
@@ -278,18 +284,35 @@ summarize_to_raster= function(data_in_path, out_path){
   #### 4) make raster ######
   
   traj_back_df_filled = traj_back %>% rbind.fill()
-  data_raster1 <- rasterFromXYZ(traj_back_df_filled %>%
-                                  mutate(x = lon, y = lat) %>%
-                                  dplyr::select(x,y, eval(names(traj_back_df_filled)[5:28])),
-                                crs = crs("epsg:4326"))
+  # Determine extent and resolution
+  extent_x <- range(traj_back_df_filled$lon)
+  extent_y <- range(traj_back_df_filled$lat)
+  res_x <- 0.1
+  res_y <- 0.1
   
-  print("traj has been rasterized")
+  # Create a blank raster with the defined extent and resolution
+  r <- raster(xmn = extent_x[1], xmx = extent_x[2],
+              ymn = extent_y[1], ymx = extent_y[2],
+              res = c(res_x, res_y), crs = crs("epsg:4326"))
   
-  temp_out_path = file.path(out_path, paste0("r_",temp_date))
-  terra::writeRaster(data_raster1, paste0(temp_out_path, '.tif'), overwrite = T)
-  print(paste0("Trajectory raster built for ", temp_date,".")) # the "." may not work on kamiak
+  # Define the columns to rasterize (adjust as necessary)
+  value_column <- names(traj_back_df_filled)[5:28]  # Columns to rasterize
+  
+  # Rasterize each value column
+  for (value_col in value_column) {
+    print(paste("Rasterizing column:", value_col))
+    
+    # Create a raster for the current value column
+    r_value <- rasterize(traj_back_df_filled[, c("lon", "lat")],
+                         r, field = traj_back_df_filled[[value_col]],
+                         fun = mean, na.rm = TRUE)
+    
+    # Save the raster
+    temp_out_path <- file.path(out_path, paste0("r_", temp_date, "_", value_col, ".tif"))
+    writeRaster(r_value, temp_out_path, overwrite = TRUE)
+  }
+  print(paste0("Trajectory rasters built for ", temp_date,"."))
 }
-
 
 
 

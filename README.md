@@ -190,6 +190,16 @@ downloaded to the working directory from URL
 
 #### Daily rasters
 
+We can summarize the meteorological data from HYSPLIT into indices that
+estimate air mass conditions. For detailed calculations for each
+variable see the `R/functions.R`. The script example below is formatted
+to run on an HPC. The job below can be run on many processes to break up
+large study domains and long time spans of interest. Our approach was to
+run trajectories for the entire study domain one day at a time. The
+example arguments set up a group of nine stations around Medford, OR to
+run for one day; 2021-01-25. This example takes only 20-40 seconds to
+run.
+
 ```{r create_rasters}
 # obtain necessary functions
 source("R/functions.R")
@@ -201,7 +211,7 @@ args = commandArgs(trailingOnly = T)
 
 #2: the out directory provides a location to produce daily folders with HYSPLIT rasters for the study domain.
 
-args = c("processed_data/example_traj", "processed_data/rasters")
+args = c("processed_data/example_traj/2021-01-25", "processed_data/rasters")
 
 data_in_path = args[1]
 print(paste("the data_in_path is ",data_in_path))
@@ -221,61 +231,70 @@ north_america = get_northAmerica()
 ### run the day of rasters.
 summarize_to_raster(data_in_path = data_in_path,
                     out_path = out_path)
+
+print(paste("rasters saved to", out_path))
 ```
 
 Visualize HYSPLIT Rasters
 
-#### Cluster analysis
+The rasters of total rainfall are plotted, showing the rainfall history
+for air masses associated with each station. The rasters a plotted over
+a Stamen background map that shows terrain.
 
-```{r}
-# Study area grid points for hysplt initiation ####
+```{r raster_plot}
 
-# Step 1: Generate the 32 km grid of points
-lon_range <- seq(-124.55, -116.35, by = 0.28) #-126 for coast   
-lat_range <- seq(41.75, 49.25, by = 0.28) # 42 for OR/CA border 
-grid_points <- expand.grid(lon = lon_range, lat = lat_range) %>% mutate(station = 1:n()) # add wet/dry
-# 810 point
-# 27 high
-# 30 wide
-# 
-# 785, 791, 797, 803, 809
-# 605, 611, 617, 623, 629
-# 425, 431, 437, 443, 449
-# 245, 251, 257, 263, 269
-#  65,  71,  77,  83,  90   
+# Load the raster
+raster_file <- 'processed_data/rasters/r_2021-01-25_total_rain.tif'
+raster_data <- rast(raster_file)
 
-#Create a Leaflet map to examine the grid
-leaflet() %>%
-  addTiles() %>%
-  addCircleMarkers(
-    data = grid_points,
-    lng = ~lon, lat = ~lat,
-    radius = 3, color = "green", fill = TRUE, fillOpacity = 0.4, stroke = FALSE,
-    popup = ~paste("Station:", station, "<br>Longitude:", lon, "<br>Latitude:", lat)
+# Convert raster to data frame
+rasters_df <- as.data.frame(raster_data, xy = TRUE)
+colnames(rasters_df) <- c("lon", "lat", "total_rain")  # Ensure proper column names
+
+# Get the map background
+bbox <- c(left = -123.5, bottom = 42, right = -122.6, top = 42.6)
+map_background <- get_map(bbox, zoom = 10, maptype = "stamen_terrain_background")
+
+# Create the raster plot
+main_plot <- ggmap(map_background, alpha = 0.7) +
+  geom_raster(data = rasters_df, aes(x = lon, y = lat, fill = total_rain), alpha = 0.5) +
+  borders("state", size = 1) +
+  geom_text(data = locs, 
+            aes(x = longitude, y = latitude, label = station)) +
+  coord_fixed(xlim = c(-123.5, -122.6),
+              ylim = c(42, 42.6)) +
+  annotate("text", x = -123.25, y = 42.02, 
+           label = '© Stadia Maps © Stamen Design © OpenMapTiles © OpenStreetMap contributors',
+           hjust = 0, vjust = 0, size = 3, color = "black")+
+  labs(
+    title = 'Trajectory Local Rainfall',
+    x = "Longitude",
+    y = "Latitude",
+    fill = 'Rainfall (mm)'
+  ) +
+  theme(
+    plot.background = element_rect(fill = "white"),  # Set plot background color
+    panel.background = element_rect(fill = "white"),  # Set panel background color
+    strip.background = element_rect(fill = "white"),  # Set strip (facet label) background color
+    axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels
+    strip.text = element_text(size = 12),  # Adjust strip text size
+    panel.spacing = unit(1, "lines")  # Increase spacing between facets
   )
 
-# read in mutated traj df prepped for trajCluster
-all_trj <- read.csv("Hysplt/processed_data/cluster_analysis/all_clus_traj_731.csv")
+# Create the inset plot of the USA outline
+usa <- map_data("usa")
+inset_plot <- ggplot() +
+  geom_polygon(data = usa, aes(x = long, y = lat, group = group), fill = "lightgrey", color = "black") +
+  geom_point(data = locs %>% filter(station==5), aes(longitude, latitude), col = 'red')+
+  theme_void()
 
-all_trj <- all_trj %>%
-  mutate(
-    traj_dt_i = as.POSIXct(traj_dt_i, format = "%Y-%m-%dT%H:%M:%SZ"),
-    traj_dt = as.POSIXct(traj_dt, format = "%Y-%m-%dT%H:%M:%SZ"),
-    date2 = as.POSIXct(date2, format = "%Y-%m-%dT%H:%M:%SZ"),
-    date = as.POSIXct(date, format = "%Y-%m-%dT%H:%M:%SZ"),
-    lon = ifelse(lon>=0, -180 - (180-lon), lon)
-  )
+# Combine the raster plot with the inset plot
+final_plot <- ggdraw() +
+  draw_plot(main_plot) +
+  draw_plot(inset_plot, x = 0.1, y = 0.725, width = 0.2, height = 0.2)  # Adjust position and size as needed
 
-# create different clusters
-cluster_5<-trajCluster(all_trj, method = "Euclid", n.cluster=5, xlim = c(-240, -115), ylim = c(25, 75))
-cluster_4<-trajCluster(all_trj, method = "Euclid", n.cluster=4, xlim = c(-240, -115), ylim = c(25, 75))
-cluster_3<-trajCluster(all_trj, method = "Euclid", n.cluster=3, xlim = c(-240, -115), ylim = c(25, 75))
+# Display the raster plot
+print(final_plot)
 ```
 
-Visualize Trajectory Clusters
-
-### Regression Analysis
-
-Random Forest
-
-Multiple Linear Regression
+#### 

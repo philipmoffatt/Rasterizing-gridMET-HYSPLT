@@ -133,7 +133,7 @@ backtrj_summarize_k <- function(H = backtrj_dt,
              c = test$lon[2:nrow(test)],
              d = test$lat[2:nrow(test)])
   
-  test[,dist_test := pmap(l, 
+  test[,dist_test := purrr::pmap(l, 
                           function (a,b,c,d)  distVincentyEllipsoid(c(a,b),
                                                                     c(c,d))) %>%
          unlist(.) %>% c(0,.)]
@@ -157,13 +157,13 @@ backtrj_summarize_k <- function(H = backtrj_dt,
     split(test_sf$run)
   
   # running each trajectory run into walk function for sat/freeze cycles
-  test_sf_list = map(test_it_all, 
+  test_sf_list = purrr::map(test_it_all, 
                      walk_traj_function)
   # summarizing each trajectory with sum all function
-  test_sum_all = map_df(test_sf_list, 
+  test_sum_all = purrr::map_df(test_sf_list, 
                         sum_all_fn)
   # summarizing each trajectory for land based calcs
-  test_sum_land = map_df(test_sf_list, 
+  test_sum_land = purrr::map_df(test_sf_list, 
                          sum_land_fn)
   
   test_sum_all2 <- left_join(test_sum_all, test_sum_land)
@@ -213,14 +213,42 @@ summarize_to_raster= function(data_in_path, out_path){
   #### 4) make raster ######
   
   traj_back_df_filled = traj_back %>% rbind.fill()
-  data_raster1 <- rasterFromXYZ(traj_back_df_filled %>%
-                                  mutate(x = lon, y = lat) %>%
-                                  dplyr::select(x,y, eval(names(traj_back_df_filled)[5:28])),
-                                crs = crs("epsg:4326"))
+  # data_raster1 <- rasterFromXYZ(traj_back_df_filled %>%
+  #                                 mutate(x = lon, y = lat) %>%
+  #                                 dplyr::select(x,y, eval(names(traj_back_df_filled)[5:28])),
+  #                               crs = crs("epsg:4326"))
+  # 
+  # print("traj has been rasterized")
+  # 
+  # temp_out_path = file.path(out_path, paste0("r_",temp_date))
+  # terra::writeRaster(data_raster1, paste0(temp_out_path, '.tif'), overwrite = T)
+  # print(paste0("Trajectory raster built for ", temp_date,"."))
+  # Determine extent and resolution
+  extent_x <- range(traj_back_df_filled$lon)
+  extent_y <- range(traj_back_df_filled$lat)
+  res_x <- 0.1
+  res_y <- 0.1
   
-  print("traj has been rasterized")
+  # Create a blank raster with the defined extent and resolution
+  r <- raster(xmn = extent_x[1], xmx = extent_x[2],
+              ymn = extent_y[1], ymx = extent_y[2],
+              res = c(res_x, res_y), crs = crs("epsg:4326"))
   
-  temp_out_path = file.path(out_path, paste0("r_",temp_date))
-  terra::writeRaster(data_raster1, paste0(temp_out_path, '.tif'), overwrite = T)
-  print(paste0("Trajectory raster built for ", temp_date,"."))
+  # Define the columns to rasterize (adjust as necessary)
+  value_column <- names(traj_back_df_filled)[5:28]  # Columns to rasterize
+  
+  # Rasterize each value column
+  for (value_col in value_column) {
+    print(paste("Rasterizing column:", value_col))
+    
+    # Create a raster for the current value column
+    r_value <- rasterize(traj_back_df_filled[, c("lon", "lat")],
+                         r, field = traj_back_df_filled[[value_col]],
+                         fun = mean, na.rm = TRUE)
+    
+    # Save the raster
+    temp_out_path <- file.path(out_path, paste0("r_", temp_date, "_", value_col, ".tif"))
+    writeRaster(r_value, temp_out_path, overwrite = TRUE)
+  }
+  print(paste0("Trajectory rasters built for ", temp_date,"."))
 }

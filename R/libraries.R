@@ -16,6 +16,11 @@ library(openair)
 
 # maps and figures
 library(maps)
+library(ggrepel)
+library(terra)
+library(ggrepel)
+library(ggmap)
+library(cowplot)
 
 # converting HYSPLIT trajectory data to daily rasters
 library(terra)
