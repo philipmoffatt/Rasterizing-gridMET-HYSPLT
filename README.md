@@ -6,15 +6,27 @@ editor_options:
 
 # Rasterizing-HYSPLIT
 
-This workflow is used for manipulating climate data and creating
-atmospheric indices from HYSPLIT trajectories.
+The Hybrid Single-Particle Lagrangian Integrated Trajectory (HYSPLIT)
+model (Stein et al., 2015) is a used for relating air mass trajectories
+with the stable isotopic compositions of precipitation (δ^2^H and
+δ^18^O) . This workflow manipulates climate data and creates rasterized
+atmospheric indices from HYSPLIT trajectories. The script begins with
+selecting a study domain around Medford, OR and works through a
+methodology for running HYSPLIT, summarizing trajectory data into
+indices, and finally creating rasters. The rasters estimate the air mass
+conditions impacting the selected study area.
+
+1.  Install and load necessary software
+2.  Run HYSPLIT and obtain trajectory files
+3.  Process trajectory files and create rasters from HYSPLIT indices
+4.  Conclusion
+
+### 1. Install and load software
 
 Software requirements:\
 R-Studio 2023.12.0.369:
 <https://posit.co/products/open-source/rstudio/>\
 R version 4.3.2 (2023-10-31 ucrt): <https://cran.rstudio.com/>
-
-#### Installing and loading packages
 
 ```{r packages}
 
@@ -70,9 +82,9 @@ if (!require("climate", character.only = TRUE)) {
 source('R/functions.R')
 ```
 
-#### HYSPLIT trajectories using a matrix method  
+### 2. Run HYSPLIT and obtain trajectory files
 
-1) Building a matrix of receptor points
+-   Building a matrix of receptor points
 
 Pulling trajectories from multiple points around a target location can
 better approximate the movement of an airmass. We construct a matrix of
@@ -100,7 +112,7 @@ leaflet(data = locs) %>%
   )
 ```
 
-2) Running HYSPLIT
+-   Running HYSPLIT
 
 The example code below generates air mass back trajectories for nine
 station locations. Using the matrix method, there are nine air parcel
@@ -186,19 +198,28 @@ this argument defined as 'NULL' results in the .gbl files being
 downloaded to the working directory from URL
 '<ftp://arlftp.arlhq.noaa.gov/archives/reanalysis>'
 
-### Process trajectories
+### 3. Process trajectory files and create rasters from HYSPLIT indices
 
-#### Daily rasters
+-   Daily HYSPLIT indices
 
 We can summarize the meteorological data from HYSPLIT into indices that
 estimate air mass conditions. For detailed calculations for each
 variable see the `R/functions.R`. The script example below is formatted
 to run on an HPC. The job below can be run on many processes to break up
-large study domains and long time spans of interest. Our approach was to
-run trajectories for the entire study domain one day at a time. The
-example arguments set up a group of nine stations around Medford, OR to
-run for one day; 2021-01-25. This example takes only 20-40 seconds to
-run.
+large study domains and long time spans of interest. We run trajectories
+for the entire study domain one day at a time in this example. HYSPLIT
+trajectories run for a group of nine stations around Medford, OR over
+one day, 2021-01-25, which takes only 20-40 seconds to process.
+
+One function processes the HYSPLIT trajectory files into rasters,
+`summarize_to_raster`. It incorporates multiple helper functions that
+aggregate the trajectory meteorological data over the entire trajectory
+and the portion of the trajectory overland into indices. The result is
+one daily value for each HYSPLIT variable. Referring to Section 2, it is
+crucial to understand that each daily value is a mean, or otherwise
+aggregated value, from nine trajectories surrounding a single station
+site. The nine air parcel trajectories are run four times a day, so the
+resulting daily air mass variables incorporate 36 trajectory files.
 
 ```{r create_rasters}
 # obtain necessary functions
@@ -235,7 +256,7 @@ summarize_to_raster(data_in_path = data_in_path,
 print(paste("rasters saved to", out_path))
 ```
 
-Visualize HYSPLIT Rasters
+-   Visualize HYSPLIT Rasters
 
 The rasters of total rainfall are plotted, showing the rainfall history
 for air masses associated with each station. The rasters a plotted over
@@ -297,4 +318,13 @@ final_plot <- ggdraw() +
 print(final_plot)
 ```
 
-#### 
+### 4. Conclusion
+
+The presented methodology incorporates selecting a study area and
+developing rasterized estimates of daily air mass conditions relevant to
+local conditions and the analysis of isotopic variability in daily
+precipitation. Rasters enable the projection of predictive relationships
+between air mass conditions and isotopic composition into unmeasured
+locales. Comparing isotope maps, isoscapes, with field measurements from
+similar locations or broader regions can also highlight how well
+isotopic variability is explained by air mass conditions.
