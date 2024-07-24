@@ -5,16 +5,16 @@
 # Rasterizing-HYSPLIT
 
 The Hybrid Single-Particle Lagrangian Integrated Trajectory (HYSPLIT)
-model (Stein et al., 2015) is a used for relating air mass trajectories
-with the stable isotopic compositions of precipitation (δ^2^H and
-δ^18^O) . This workflow manipulates climate data and creates rasterized
+model (Stein et al., 2015) is used for relating air mass trajectories
+with the stable isotopic compositions of precipitation (δ2H and
+δ18O). This workflow manipulates climate data and creates rasterized
 atmospheric indices from HYSPLIT trajectories. The script begins with
-selecting a study domain around Medford, OR and works through a
+selecting a study domain around Medford, OR, and works through a
 methodology for running HYSPLIT, summarizing trajectory data into
 indices, and finally creating rasters. The rasters estimate the air mass
 conditions impacting the selected study area.
 
-1.  Install and load necessary software
+1.  Install and load the necessary software
 2.  Run HYSPLIT and obtain trajectory files
 3.  Process trajectory files and create rasters from HYSPLIT indices
 4.  Conclusion
@@ -85,10 +85,10 @@ source('R/functions.R')
 -   Building a matrix of receptor points
 
 Pulling trajectories from multiple points around a target location can
-better approximate the movement of an airmass. We construct a matrix of
-initiations points around each target location that matches the
+better approximate the movement of an air mass. We construct a matrix of
+initiation points around each target location that matches the
 resolution of the reanalysis data product used to force HYSPLIT
-(\~32km). Finer resolution likely would not produce values appreciably
+(\~32km). A finer resolution likely would not produce values appreciably
 different, whereas a larger resolution sacrifices spatial detail. The
 interactive example below demonstrates a matrix of nine points around
 the Medford, OR airport (MFR).
@@ -117,7 +117,7 @@ station locations. Using the matrix method, there are nine air parcel
 back trajectories run for each station, four times daily. The processing
 time for the 324 back trajectories will vary from 10-20 min. Trajectory
 files are stored in "processed_data/example_traj" and can be loaded
-instead of downloading.
+instead of downloaded.
 
 ```{r run_hysplit, eval=FALSE}
 
@@ -140,7 +140,7 @@ Out_dir = args[3]
 
 # check args were correctly loaded
 if (!length(args)==3) {
-  stop('argumentes are expected in order
+  stop('arguments are expected in order
       1: the group run file to be iterated over - each line is one location and one day
       2: the met dir defalts to "Hysplt/met_dir"
       3: the base output directory Hysplt/processed_data/runs_$sys.date/'
@@ -202,11 +202,11 @@ downloaded to the working directory from URL
 
 We can summarize the meteorological data from HYSPLIT into indices that
 estimate air mass conditions. For detailed calculations for each
-variable see the `R/functions.R`. The script example below is formatted
+variable, see the `R/functions.R`. The script example below is formatted
 to run on an HPC. The job below can be run on many processes to break up
 large study domains and long time spans of interest. We run trajectories
 for the entire study domain one day at a time in this example. HYSPLIT
-trajectories run for a group of nine stations around Medford, OR over
+trajectories run for a group of nine stations around Medford, OR, over
 one day, 2021-01-25, which takes only 20-40 seconds to process.
 
 One function processes the HYSPLIT trajectory files into rasters,
@@ -239,8 +239,8 @@ out_path = args[2]
 print(paste("the out_path is ",out_path))
 
 if (!length(args)==2) {
-  stop("argumentes are expected in order
-      1: the day of trajectorys.
+  stop("arguments are expected in order
+      1: the day of trajectories.
       2: the out path for the rasters.")
       }
 
@@ -323,6 +323,6 @@ developing rasterized estimates of daily air mass conditions relevant to
 local conditions and the analysis of isotopic variability in daily
 precipitation. Rasters enable the projection of predictive relationships
 between air mass conditions and isotopic composition into unmeasured
-locales. Comparing isotope maps, isoscapes, with field measurements from
+locales. Comparing isotope maps, or isoscapes, with field measurements from
 similar locations or broader regions can also highlight how well
 isotopic variability is explained by air mass conditions.
