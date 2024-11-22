@@ -26,7 +26,7 @@ R-Studio 2023.12.0.369:
 <https://posit.co/products/open-source/rstudio/>\
 R version 4.3.2 (2023-10-31 ucrt): <https://cran.rstudio.com/>
 
-```{r packages}
+```{r packages, echo = FALSE}
 
 # Libraries ####
 
@@ -84,7 +84,7 @@ if (!require("climate", character.only = TRUE)) {
 
 #### Load functions
 
-```{r functions}
+```{r functions, echo = FALSE}
 # Functions ####
 
 
@@ -440,7 +440,7 @@ time for the 324 back trajectories will vary from 10-20 min. Trajectory
 files are stored in "processed_data/example_traj" and can be loaded
 instead of downloaded.
 
-```{r run_hysplit, eval=FALSE}
+```{r run_hysplit, echo = FALSE}
 
 # Create the data frame
 df <- tibble::tibble(
@@ -533,7 +533,7 @@ aggregated value, from nine trajectories surrounding a single station
 site. The nine air parcel trajectories are run four times a day, so the
 resulting daily air mass variables incorporate 36 trajectory files.
 
-```{r create_rasters}
+```{r create_rasters, echo = FALSE}
 
 #1: the directory that holds each day of trajectories, choosing the first day
 data_in_path <- list.files(out_dir, full.names = T)[1]
@@ -571,7 +571,7 @@ The rasters of total rainfall are plotted, showing the rainfall history
 for air masses associated with each station. The rasters a plotted over
 a Stamen background map that shows terrain.
 
-```{r raster_plot}
+```{r raster_plot, echo = FALSE}
 
 # Load the raster - total rain along the trajectories
 raster_file <- paste0(out_path,'/r_2021-01-25_total_rain.tif')
@@ -629,7 +629,7 @@ print(final_plot)
 ### 4. Download an elevation raster
 An elevation raster is used in this example to obtain a coordinate reference system and resolution. 
 
-```{r elevation}
+```{r elevation, echo = FALSE}
 # set boundary for study area to states
 sa_bounds <- aoi_get(state = c("OR"))
 
@@ -643,7 +643,7 @@ names(elevation_sa) <- "elevation_m"
 
 Only HYSPLIT indices and the elevation predictors are included in this data frame to simplify the workflow in this example. Incorporating other data sources such as gridMET requires following the steps shown here for elevation data. The extent and reference system for the rasters must match. The layer names in the rasters must also match the model predictors. 
 
-```{r rf_model}
+```{r rf_model, echo = FALSE}
 # using a simplified set of predictors that refer to rasters already produced in this workflow
 # example data from roughly 1 month
 data <- data.frame(
@@ -675,7 +675,7 @@ rf_model <- randomForest(d2h_daily ~ .,
 ### 6. Prepare the predictor rasters
 The raster manipulation shown here produces one daily raster stack for 2021-01-25 that includes layers with the predictors spatially represented. 
 
-```{r raster_prep}
+```{r raster_prep, echo = FALSE}
 # rasters for predictors
 # List all the raster files for a specific date
 raster_files <- list.files(out_path, pattern = "2021-01-25", full.names = TRUE)
@@ -706,7 +706,7 @@ hysplit_resample <- resample(hysplit_rast, elevation_crop, method = "bilinear")
 ```
 ### 7. Make an isoscape
 
-```{r_isoscape}
+```{r_isoscape, echo = FALSE}
 # Combine all predictors into a single SpatRaster
 predictors <- c(hysplit_resample, elevation_crop)
 
